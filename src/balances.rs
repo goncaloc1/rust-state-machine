@@ -20,6 +20,8 @@ impl Pallet {
   /// Get the balance of an account `who`.
 	/// If the account has no stored balance, we return zero.
   pub fn balance(&self, who: &String) -> u128 {
+    // dereferencing with `*` as result will be &value or &0
+    // note, get will return Option<&V> hence the dereferencing
     *self.balances.get(who).unwrap_or(&0)
   }
 }
