@@ -23,19 +23,18 @@ fn init_balances() {
 #[test]
 fn transfer_balance() {
     let mut balances = balances::Pallet::new();
+    let alice = String::from("alice");
+    let bob = String::from("bob");
 
     assert_eq!(
-        balances.transfer("alice".to_string(), "bob".to_string(), 10),
+        balances.transfer(alice.clone(), bob.clone(), 10),
         Err("error subtracting balance")
     );
 
-    balances.set_balance(&"alice".to_string(), 15);
+    balances.set_balance(&alice, 15);
 
-    assert_eq!(
-        balances.transfer("alice".to_string(), "bob".to_string(), 10),
-        Ok(())
-    );
+    assert_eq!(balances.transfer(alice.clone(), bob.clone(), 10), Ok(()));
 
-    assert_eq!(balances.balance(&"alice".to_string()), 5);
-    assert_eq!(balances.balance(&"bob".to_string()), 10);
+    assert_eq!(balances.balance(&alice), 5);
+    assert_eq!(balances.balance(&bob), 10);
 }
