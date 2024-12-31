@@ -3,6 +3,7 @@ mod system;
 
 // This is our main Runtime.
 // It accumulates all of the different pallets we want to use.
+#[derive(Debug)]
 pub struct Runtime {
     system: system::Pallet,
     balances: balances::Pallet,
@@ -46,4 +47,6 @@ fn main() {
         .balances
         .transfer(alice.clone(), charlie.clone(), 20)
         .map_err(|e| eprintln!("{}", e));
+
+    print!("{:#?}", runtime)
 }
