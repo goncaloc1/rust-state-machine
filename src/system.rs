@@ -1,24 +1,27 @@
 use std::collections::BTreeMap;
 
-type AccountId = String;
-type Nonce = u32;
-type BlockNumber = u32;
+use num::{One, Zero};
 
 /// This is the System Pallet.
 /// It handles low level state needed for your blockchain.
 #[derive(Debug)]
-pub struct Pallet {
+pub struct Pallet<BlockNumber, AccountId, Nonce> {
     /// The current block number.
     block_number: BlockNumber,
     /// A map from an account to their nonce.
     nonce: BTreeMap<AccountId, Nonce>,
 }
 
-impl Pallet {
+impl<BlockNumber, AccountId, Nonce> Pallet<BlockNumber, AccountId, Nonce>
+where
+    BlockNumber: Zero + One + Copy,
+    AccountId: Ord + Clone,
+    Nonce: Zero + One + Copy,
+{
     /// Create a new instance of the System Pallet.
     pub fn new() -> Self {
         Self {
-            block_number: 0,
+            block_number: BlockNumber::zero(),
             nonce: BTreeMap::new(),
         }
     }
@@ -31,28 +34,30 @@ impl Pallet {
     // This function can be used to increment the block number.
     // Increases the block number by one.
     pub fn inc_block_number(&mut self) {
-        self.block_number += 1;
+        self.block_number = self.block_number + BlockNumber::one();
     }
 
     // Increment the nonce of an account. This helps us keep track of how many transactions each
     // account has made.
     pub fn inc_nonce(&mut self, who: &AccountId) {
-        let current_nonce = *self.nonce.get(who).unwrap_or(&0);
-        let new_nonce = current_nonce + 1;
+        let current_nonce = *self.nonce.get(who).unwrap_or(&Nonce::zero());
+        let new_nonce = current_nonce + Nonce::one();
         self.nonce.insert(who.clone(), new_nonce);
     }
 }
 
 #[cfg(test)]
 mod test {
+    use crate::types;
+
     /// Checks the following:
-    ///  - Increment the current block number.
+    /// - Increment the current block number.
     /// - Increment the nonce of `alice`.
     /// - Check the block number is what we expect.
     /// - Check the nonce of `alice` is what we expect.
     #[test]
     fn init_system() {
-        let mut system = super::Pallet::new();
+        let mut system = super::Pallet::<types::BlockNumber, types::AccountId, types::Nonce>::new();
         let alice = String::from("alice");
         let bob = String::from("bob");
 
