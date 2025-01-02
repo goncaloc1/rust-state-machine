@@ -1,4 +1,4 @@
-use std::collections::BTreeMap;
+use std::{collections::BTreeMap, ops::AddAssign};
 
 use num::{One, Zero};
 
@@ -14,7 +14,7 @@ pub struct Pallet<BlockNumber, AccountId, Nonce> {
 
 impl<BlockNumber, AccountId, Nonce> Pallet<BlockNumber, AccountId, Nonce>
 where
-    BlockNumber: Zero + One + Copy,
+    BlockNumber: Zero + One + AddAssign + Copy,
     AccountId: Ord + Clone,
     Nonce: Zero + One + Copy,
 {
@@ -34,7 +34,7 @@ where
     // This function can be used to increment the block number.
     // Increases the block number by one.
     pub fn inc_block_number(&mut self) {
-        self.block_number = self.block_number + BlockNumber::one();
+        self.block_number += BlockNumber::one();
     }
 
     // Increment the nonce of an account. This helps us keep track of how many transactions each
