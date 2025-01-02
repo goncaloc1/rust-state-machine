@@ -1,14 +1,16 @@
+use num::traits::{CheckedAdd, CheckedSub, Zero};
 use std::collections::BTreeMap;
 
-type AccountId = String;
-type Balance = u128;
-
 #[derive(Debug)]
-pub struct Pallet {
+pub struct Pallet<AccountId, Balance> {
     balances: BTreeMap<AccountId, Balance>,
 }
 
-impl Pallet {
+impl<AccountId, Balance> Pallet<AccountId, Balance>
+where
+    AccountId: Ord + Clone,
+    Balance: Zero + CheckedSub + CheckedAdd + Copy,
+{
     /// Create a new instance of the balances module
     pub fn new() -> Self {
         Self {
@@ -26,7 +28,7 @@ impl Pallet {
     pub fn balance(&self, who: &AccountId) -> Balance {
         // dereferencing with `*` as result will be &value or &0
         // note, get will return Option<&V> hence the dereferencing
-        *self.balances.get(who).unwrap_or(&0)
+        *self.balances.get(who).unwrap_or(&Balance::zero())
     }
 
     /// Transfer `amount` from one account to another.
@@ -42,11 +44,11 @@ impl Pallet {
         let to_balance = self.balance(&to);
 
         let new_caller_balance = caller_balance
-            .checked_sub(amount)
+            .checked_sub(&amount)
             .ok_or("error subtracting balance")?;
 
         let new_to_balance = to_balance
-            .checked_add(amount)
+            .checked_add(&amount)
             .ok_or("error adding balance")?;
 
         self.set_balance(&caller, new_caller_balance);
@@ -58,9 +60,11 @@ impl Pallet {
 
 #[cfg(test)]
 mod tests {
+    use crate::types;
+
     #[test]
     fn init_balances() {
-        let mut balances = super::Pallet::new();
+        let mut balances = super::Pallet::<types::AccountId, types::Balance>::new();
 
         assert_eq!(balances.balance(&"alice".to_string()), 0);
 
@@ -76,7 +80,7 @@ mod tests {
     /// - That the balance of `alice` and `bob` is correctly updated.
     #[test]
     fn transfer_balance() {
-        let mut balances = super::Pallet::new();
+        let mut balances = super::Pallet::<types::AccountId, types::Balance>::new();
         let alice = String::from("alice");
         let bob = String::from("bob");
 
