@@ -8,7 +8,6 @@ mod types {
     pub type AccountId = String;
     pub type Balance = u128;
     pub type BlockNumber = u32;
-    pub type Nonce = u32;
     pub type Extrinsic = crate::support::Extrinsic<AccountId, crate::RuntimeCall>;
     pub type Header = crate::support::Header<BlockNumber>;
     pub type Block = crate::support::Block<Header, Extrinsic>;
@@ -68,7 +67,12 @@ impl Runtime {
         self.system.inc_block_number();
 
         if self.system.block_number() != block.header.block_number {
-            return Err("Block numbers do not match");
+            eprintln!(
+            "Detailed error: Block numbers do not match: system block_number {}; block_number {}.",
+            self.system.block_number(), block.header.block_number
+        );
+
+            return Err("Block numbers do not match.");
         }
 
         for (i, support::Extrinsic { caller, call }) in block.extrinsics.into_iter().enumerate() {
@@ -112,33 +116,37 @@ impl crate::support::Dispatch for Runtime {
 }
 
 fn main() {
+    // Create a new instance of the Runtime.
+    // It will instantiate with it all the modules it uses.
     let mut runtime = Runtime::new();
-
     let alice = String::from("alice");
     let bob = String::from("bob");
     let charlie = String::from("charlie");
 
     runtime.balances.set_balance(&alice, 100);
 
-    // start emulating a block
-    runtime.system.inc_block_number();
-    assert_eq!(runtime.system.block_number(), 1);
+    let block_1 = types::Block {
+        header: support::Header { block_number: 1 },
+        extrinsics: vec![
+            support::Extrinsic {
+                caller: alice.clone(),
+                call: RuntimeCall::BalancesTransfer {
+                    to: bob,
+                    amount: 30,
+                },
+            },
+            support::Extrinsic {
+                caller: alice.clone(),
+                call: RuntimeCall::BalancesTransfer {
+                    to: charlie,
+                    amount: 20,
+                },
+            },
+        ],
+    };
 
-    // first transaction
-    runtime.system.inc_nonce(&alice);
+    runtime.execute_block(block_1).expect("invalid block");
 
-    let _ = runtime
-        .balances
-        .transfer(alice.clone(), bob, 30)
-        .map_err(|e| eprintln!("{}", e));
-
-    // second transaction
-    runtime.system.inc_nonce(&alice);
-
-    let _ = runtime
-        .balances
-        .transfer(alice, charlie, 20)
-        .map_err(|e| eprintln!("{}", e));
-
+    // Print the debug format of runtime state
     print!("{:#?}", runtime)
 }
