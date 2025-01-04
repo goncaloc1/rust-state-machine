@@ -1,6 +1,14 @@
 use core::fmt::Debug;
 use std::collections::BTreeMap;
 
+// A public enum which describes the calls we want to expose to the dispatcher.
+// We should expect that the caller of each call will be provided by the dispatcher,
+// and not included as a parameter of the call.
+pub enum Call<T: Config> {
+    CreateClaim { claim: T::Content },
+    RevokeClaim { claim: T::Content },
+}
+
 pub trait Config: crate::system::Config {
     /// The type which represents the content that can be claimed using this pallet.
     /// Could be the content directly as bytes, or better yet the hash of that content.
@@ -37,8 +45,6 @@ impl<T: Config> Pallet<T> {
         caller: T::AccountId,
         claim: T::Content,
     ) -> crate::support::DispatchResult {
-        /* TODO: Check that a `claim` does not already exist. If so, return an error. */
-        /* TODO: `insert` the claim on behalf of `caller`. */
         if self.claims.contains_key(&claim) {
             return Err(&"this content is already claimed");
         }
@@ -65,6 +71,30 @@ impl<T: Config> Pallet<T> {
         }
 
         self.claims.remove(&claim);
+
+        Ok(())
+    }
+}
+
+/// Implementation of the dispatch logic, mapping from `POECall` to the appropriate underlying
+/// function we want to execute.
+impl<T: Config> crate::support::Dispatch for Pallet<T> {
+    type Caller = T::AccountId;
+    type Call = Call<T>;
+
+    fn dispatch(
+        &mut self,
+        caller: Self::Caller,
+        call: Self::Call,
+    ) -> crate::support::DispatchResult {
+        match call {
+            Call::CreateClaim { claim } => {
+                self.create_claim(caller, claim)?;
+            }
+            Call::RevokeClaim { claim } => {
+                self.revoke_claim(caller, claim)?;
+            }
+        }
 
         Ok(())
     }
