@@ -12,12 +12,14 @@ mod types {
     pub type Extrinsic = crate::support::Extrinsic<AccountId, crate::RuntimeCall>;
     pub type Header = crate::support::Header<BlockNumber>;
     pub type Block = crate::support::Block<Header, Extrinsic>;
+    pub type Content = &'static str;
 }
 
 // These are all the calls which are exposed to the world.
 // Note that it is just an accumulation of the calls exposed by each module.
 pub enum RuntimeCall {
     Balances(balances::Call<Runtime>),
+    ProofOfExistence(proof_of_existence::Call<Runtime>),
 }
 
 // This is our main Runtime.
@@ -26,6 +28,7 @@ pub enum RuntimeCall {
 pub struct Runtime {
     system: system::Pallet<Self>,
     balances: balances::Pallet<Self>,
+    proof_of_existence: proof_of_existence::Pallet<Self>,
 }
 
 impl system::Config for Runtime {
@@ -38,12 +41,17 @@ impl balances::Config for Runtime {
     type Balance = u128;
 }
 
+impl proof_of_existence::Config for Runtime {
+    type Content = types::Content;
+}
+
 impl Runtime {
     // Create a new instance of the main Runtime, by creating a new instance of each pallet.
     fn new() -> Self {
         Self {
             system: system::Pallet::new(),
             balances: balances::Pallet::new(),
+            proof_of_existence: proof_of_existence::Pallet::new(),
         }
     }
 
@@ -106,6 +114,9 @@ impl crate::support::Dispatch for Runtime {
         match runtime_call {
             RuntimeCall::Balances(call) => {
                 self.balances.dispatch(caller, call)?;
+            }
+            RuntimeCall::ProofOfExistence(call) => {
+                self.proof_of_existence.dispatch(caller, call)?;
             }
         }
 
