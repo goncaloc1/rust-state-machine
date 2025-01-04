@@ -1,6 +1,7 @@
 use support::Dispatch;
 
 mod balances;
+mod proof_of_existence;
 mod support;
 mod system;
 
