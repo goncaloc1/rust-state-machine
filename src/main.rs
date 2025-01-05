@@ -135,19 +135,21 @@ fn main() {
     runtime.balances.set_balance(&alice, 100);
 
     let block_1 = types::Block {
-        header: support::Header { block_number: 1 },
+        header: support::Header {
+            block_number: runtime.system.block_number() + 1,
+        },
         extrinsics: vec![
             support::Extrinsic {
                 caller: alice.clone(),
                 call: RuntimeCall::Balances(balances::Call::Transfer {
-                    to: bob,
+                    to: bob.clone(),
                     amount: 30,
                 }),
             },
             support::Extrinsic {
                 caller: alice.clone(),
                 call: RuntimeCall::Balances(balances::Call::Transfer {
-                    to: charlie,
+                    to: charlie.clone(),
                     amount: 20,
                 }),
             },
@@ -155,6 +157,40 @@ fn main() {
     };
 
     runtime.execute_block(block_1).expect("invalid block");
+
+    let block_2 = types::Block {
+        header: support::Header {
+            block_number: runtime.system.block_number() + 1,
+        },
+        extrinsics: vec![
+            support::Extrinsic {
+                caller: alice.clone(),
+                call: RuntimeCall::ProofOfExistence(proof_of_existence::Call::CreateClaim {
+                    claim: "claim content",
+                }),
+            },
+            support::Extrinsic {
+                caller: bob.clone(),
+                call: RuntimeCall::ProofOfExistence(proof_of_existence::Call::RevokeClaim {
+                    claim: "claim content",
+                }),
+            },
+            support::Extrinsic {
+                caller: alice.clone(),
+                call: RuntimeCall::ProofOfExistence(proof_of_existence::Call::RevokeClaim {
+                    claim: "claim content",
+                }),
+            },
+            support::Extrinsic {
+                caller: charlie.clone(),
+                call: RuntimeCall::ProofOfExistence(proof_of_existence::Call::CreateClaim {
+                    claim: "charlie claim content",
+                }),
+            },
+        ],
+    };
+
+    runtime.execute_block(block_2).expect("invalid block");
 
     // Print the debug format of runtime state
     print!("{:#?}", runtime)
