@@ -1,16 +1,6 @@
 use num::traits::{CheckedAdd, CheckedSub, Zero};
 use std::collections::BTreeMap;
 
-// A public enum which describes the calls we want to expose to the dispatcher.
-// We should expect that the caller of each call will be provided by the dispatcher,
-// and not included as a parameter of the call.
-pub enum Call<T: Config> {
-    Transfer {
-        to: T::AccountId,
-        amount: T::Balance,
-    },
-}
-
 /// The configuration trait for the Balances Module.
 /// Contains the basic types needed for handling balances.
 pub trait Config: crate::system::Config {
@@ -44,7 +34,10 @@ impl<T: Config> Pallet<T> {
         // note, get will return Option<&V> hence the dereferencing
         *self.balances.get(who).unwrap_or(&T::Balance::zero())
     }
+}
 
+#[macros::call]
+impl<T: Config> Pallet<T> {
     /// Transfer `amount` from one account to another.
     /// This function verifies that `from` has at least `amount` balance to transfer,
     /// and that no mathematical overflows occur.
@@ -67,27 +60,6 @@ impl<T: Config> Pallet<T> {
 
         self.set_balance(&caller, new_caller_balance);
         self.set_balance(&to, new_to_balance);
-
-        Ok(())
-    }
-}
-
-/// Implementation of the dispatch logic, mapping from `BalancesCall` to the appropriate underlying
-/// function we want to execute.
-impl<T: Config> crate::support::Dispatch for Pallet<T> {
-    type Caller = T::AccountId;
-    type Call = Call<T>;
-
-    fn dispatch(
-        &mut self,
-        caller: Self::Caller,
-        call: Self::Call,
-    ) -> crate::support::DispatchResult {
-        match call {
-            Call::Transfer { to, amount } => {
-                self.transfer(caller, to, amount)?;
-            }
-        }
 
         Ok(())
     }
